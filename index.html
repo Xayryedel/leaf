@@ -197,7 +197,6 @@
     .skip-btn { margin-top: 1.5rem; background: #fff; color: #1a1a1a; border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 900; cursor: pointer; opacity: 0.5; pointer-events: none; transition: all 0.3s; }
     .skip-btn.active { opacity: 1; pointer-events: all; }
 
-    /* ========== НИЖНЯЯ НАВИГАЦИЯ (ПО УМОЛЧАНИЮ В РЯД) ========== */
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #f0f0f0; display: flex; flex-direction: row !important; justify-content: space-around; align-items: center; padding: 0.5rem 0; z-index: 10000; max-width: 1400px; margin: 0 auto; }
     .nav-item-mob { display: flex; flex-direction: column; align-items: center; gap: 2px; color: #999; font-size: 0.65rem; cursor: pointer; text-decoration: none; transition: color 0.2s; padding: 0 4px; }
     .nav-item-mob i { font-size: 1.3rem; }
@@ -206,7 +205,7 @@
     .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 0.6rem 1.5rem; border-radius: 20px; font-size: 0.9rem; z-index: 30000; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
     .toast.show { opacity: 1; }
 
-    /* ========== МОБИЛЬНЫЙ РЕЖИМ (ИСПРАВЛЕННЫЙ) ========== */
+    /* ========== МОБИЛЬНЫЙ РЕЖИМ ========== */
     body.mobile-mode .desktop-only { display: none !important; }
     body.mobile-mode .mobile-only { display: block !important; }
     body.mobile-mode .header-top { padding: 0.6rem 1rem; gap: 0.5rem; }
@@ -223,20 +222,10 @@
     body.mobile-mode .product-brand { font-size: 0.65rem; }
     body.mobile-mode .product-name { font-size: 0.75rem; }
     body.mobile-mode .category-grid { grid-template-columns: repeat(2, 1fr); }
-    body.mobile-mode { padding-bottom: 70px; } /* Место под навигацию */
-    
-    /* ЖЕСТКОЕ ИСПРАВЛЕНИЕ НАВИГАЦИИ ДЛЯ МОБИЛЬНЫХ */
-    body.mobile-mode .bottom-nav {
-      flex-direction: row !important;
-      padding: 0.4rem 0;
-    }
-    body.mobile-mode .nav-item-mob {
-      font-size: 0.6rem !important;
-      gap: 0 !important;
-    }
-    body.mobile-mode .nav-item-mob i {
-      font-size: 1.1rem !important;
-    }
+    body.mobile-mode { padding-bottom: 70px; }
+    body.mobile-mode .bottom-nav { flex-direction: row !important; padding: 0.4rem 0; }
+    body.mobile-mode .nav-item-mob { font-size: 0.6rem !important; gap: 0 !important; }
+    body.mobile-mode .nav-item-mob i { font-size: 1.1rem !important; }
     body.mobile-mode .modal-content { border-radius: 20px 20px 0 0; padding: 1.5rem; }
 
     .mobile-drawer { position: fixed; top: 0; left: 0; width: 85vw; max-width: 320px; height: 100vh; background: #fff; z-index: 30000; transform: translateX(-100%); transition: transform 0.3s; display: flex; flex-direction: column; padding: 1.5rem; overflow-y: auto; }
@@ -279,7 +268,6 @@
 
   <main class="main-container" id="mainContent"></main>
 
-  <!-- НИЖНЯЯ НАВИГАЦИЯ -->
   <nav class="bottom-nav mobile-only" id="bottomNav">
     <a href="#" class="nav-item-mob active" data-page="home"><i class="fas fa-home"></i><span>Главная</span></a>
     <a href="#" class="nav-item-mob" data-page="catalog"><i class="fas fa-search"></i><span>Каталог</span></a>
@@ -348,25 +336,49 @@
       setTimeout(() => { selector.style.display = 'none'; }, 400);
     }
 
-    (function() {
-      'use strict';
+    // ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ КНОПОК (чтобы onclick работал)
+    function renderHome() {
+      const products = getProducts();
+      const categories = getCategories();
+      const hits = [...products].sort((a, b) => b.popularity - a.popularity).slice(0, 6);
+      const newItems = [...products].sort((a, b) => b.id - a.id).slice(0, 6);
+      const mainContent = document.getElementById('mainContent');
+      
+      mainContent.innerHTML = `
+        <div class="hero-banner desktop-only">
+          <div class="hero-slide" style="background: #1a1a1a;"><h2>ЧЕРНАЯ ПЯТНИЦА</h2><p>Скидки до 50% на все</p><button id="heroBtn">Смотреть</button></div>
+          <div class="hero-dots"><div class="hero-dot active"></div><div class="hero-dot"></div><div class="hero-dot"></div></div>
+        </div>
+        <div class="ad-placeholder ad-top desktop-only">Место для рекламы</div>
+        <div class="section-block"><div class="section-header"><h3>Категории</h3></div><div class="category-grid">${categories.map(c => `<div class="category-card" data-category-filter="${c.id}"><span>${c.name}</span><span class="cat-icon">${c.icon}</span></div>`).join('')}</div></div>
+        <div class="section-block"><div class="section-header"><h3>Хиты продаж</h3><a href="#">Все</a></div><div class="slider-wrapper"><div class="slider-track">${hits.map(p => createProductCard(p)).join('')}</div></div></div>
+        <div class="section-block"><div class="section-header"><h3>Новинки</h3><a href="#">Все</a></div><div class="slider-wrapper"><div class="slider-track">${newItems.map(p => createProductCard(p)).join('')}</div></div></div>
+      `;
+      bindCardEvents();
+      document.querySelectorAll('.nav-item-mob').forEach(n => n.classList.remove('active'));
+      document.querySelector('.nav-item-mob[data-page="home"]')?.classList.add('active');
+    }
 
-      // ЛИСТЬЯ
-      const leafContainer = document.getElementById('leafContainer');
-      const leafIcons = ['🍂', '🍁', '🌿', '🍃'];
-      for (let i = 0; i < 20; i++) {
-        const leaf = document.createElement('div');
-        leaf.className = 'leaf';
-        leaf.textContent = leafIcons[Math.floor(Math.random() * leafIcons.length)];
-        leaf.style.left = Math.random() * 100 + '%';
-        leaf.style.fontSize = (1.2 + Math.random() * 1.8) + 'rem';
-        leaf.style.animationDuration = (12 + Math.random() * 20) + 's';
-        leaf.style.animationDelay = (Math.random() * 15) + 's';
-        leafContainer.appendChild(leaf);
-      }
+    function renderCatalog() {
+      const products = getProducts();
+      const mainContent = document.getElementById('mainContent');
+      mainContent.innerHTML = `
+        <div class="section-block">
+          <div class="section-header"><h3>Все товары</h3></div>
+          <div class="ad-placeholder ad-top">Реклама</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
+            ${products.map(p => createProductCard(p)).join('')}
+          </div>
+        </div>
+      `;
+      bindCardEvents();
+      document.querySelectorAll('.nav-item-mob').forEach(n => n.classList.remove('active'));
+      document.querySelector('.nav-item-mob[data-page="catalog"]')?.classList.add('active');
+    }
 
-      // ДАННЫЕ
-      const products = [
+    // Вспомогательные функции для глобального доступа
+    function getProducts() {
+      return [
         { id: 1, title: 'Очищающий гель', sub: 'для лица', price: 1290, oldPrice: 1590, category: 'face', icon: '🧴', popularity: 85, desc: 'Мягкое очищение.', discount: '-19%' },
         { id: 2, title: 'Тоник с ромашкой', sub: 'для лица', price: 990, oldPrice: 1290, category: 'face', icon: '🌼', popularity: 70, desc: 'Успокаивает кожу.', discount: '-23%' },
         { id: 3, title: 'Сыворотка с витамином C', sub: 'для лица', price: 2450, oldPrice: 3500, category: 'face', icon: '✨', popularity: 98, desc: 'Осветляет пигментацию.', discount: '-30%' },
@@ -395,8 +407,10 @@
         { id: 26, title: 'Палетка теней', sub: 'макияж', price: 2100, oldPrice: 2800, category: 'makeup', icon: '🎨', popularity: 78, desc: '12 оттенков.', discount: '-25%' },
         { id: 27, title: 'Консилер', sub: 'макияж', price: 750, oldPrice: 990, category: 'makeup', icon: '✏️', popularity: 70, desc: 'Скрывает недостатки.', discount: '-24%' }
       ];
+    }
 
-      const categories = [
+    function getCategories() {
+      return [
         { id: 'face', name: 'Уход за лицом', icon: '🧴' },
         { id: 'hair', name: 'Уход за волосами', icon: '💇' },
         { id: 'body', name: 'Уход за телом', icon: '🫧' },
@@ -404,17 +418,80 @@
         { id: 'fragrance', name: 'Парфюмерия', icon: '🌸' },
         { id: 'makeup', name: 'Макияж', icon: '💄' }
       ];
+    }
 
+    function createProductCard(p) {
+      return `
+        <div class="product-card" data-id="${p.id}">
+          <div class="product-img-wrapper">
+            ${p.icon}
+            <div class="badges">
+              ${p.discount ? `<div class="badge-item badge-discount">${p.discount}</div>` : ''}
+              ${p.popularity > 85 ? `<div class="badge-item badge-hit">Хит</div>` : ''}
+            </div>
+            <button class="fav-btn" data-id="${p.id}"><i class="fas fa-heart"></i></button>
+          </div>
+          <div class="product-info">
+            <div class="product-price">${p.price} ₽ ${p.oldPrice ? `<span class="product-price-old">${p.oldPrice} ₽</span>` : ''}</div>
+            <div class="product-brand">${p.sub}</div>
+            <div class="product-name">${p.title}</div>
+            <button class="btn-add-small" data-id="${p.id}"><i class="fas fa-shopping-bag"></i> В корзину</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function bindCardEvents() {
+      document.querySelectorAll('.product-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-add-small') || e.target.closest('.fav-btn')) return;
+          const id = Number(card.dataset.id);
+          const products = getProducts();
+          const p = products.find(prod => prod.id === id);
+          if (!p) return;
+          const productModal = document.getElementById('productModal');
+          const productDetailContent = document.getElementById('productDetailContent');
+          productDetailContent.innerHTML = `
+            <div class="product-detail-img">${p.icon}<button class="fav-btn-large" data-id="${p.id}"><i class="fas fa-heart"></i></button></div>
+            <div class="product-detail-title">${p.title}</div>
+            <div class="product-detail-sub">${p.sub}</div>
+            <div class="product-detail-desc">${p.desc}</div>
+            <div class="product-detail-price"><span class="new">${p.price} ₽</span>${p.oldPrice ? `<span class="old">${p.oldPrice} ₽</span>` : ''}</div>
+            <button class="btn-add-large" data-id="${p.id}"><i class="fas fa-shopping-bag"></i> В корзину</button>
+          `;
+          productModal.style.display = 'flex';
+        });
+      });
+    }
+
+    // Запуск
+    (function() {
+      'use strict';
+      
+      // Листья
+      const leafContainer = document.getElementById('leafContainer');
+      const leafIcons = ['🍂', '🍁', '🌿', '🍃'];
+      for (let i = 0; i < 20; i++) {
+        const leaf = document.createElement('div');
+        leaf.className = 'leaf';
+        leaf.textContent = leafIcons[Math.floor(Math.random() * leafIcons.length)];
+        leaf.style.left = Math.random() * 100 + '%';
+        leaf.style.fontSize = (1.2 + Math.random() * 1.8) + 'rem';
+        leaf.style.animationDuration = (12 + Math.random() * 20) + 's';
+        leaf.style.animationDelay = (Math.random() * 15) + 's';
+        leafContainer.appendChild(leaf);
+      }
+
+      // Состояние
       let cart = [];
       let favorites = [];
       let isLoggedIn = false;
       let isRegistering = false;
       let currentBalance = 1500;
-
+      
       const toast = document.getElementById('toast');
       const cartItemsList = document.getElementById('cartItemsList');
       const cartTotalEl = document.getElementById('cartTotal').querySelector('span:last-child');
-      const mainContent = document.getElementById('mainContent');
 
       function showToast(message) {
         toast.textContent = message;
@@ -422,130 +499,9 @@
         setTimeout(() => toast.classList.remove('show'), 1800);
       }
 
-      // НАВИГАЦИЯ
-      function renderNav() {
-        const desktopNav = document.getElementById('desktopNav');
-        desktopNav.innerHTML = categories.map(c => `
-          <li class="nav-item">
-            <button class="nav-link">${c.name}</button>
-            <div class="mega-menu">
-              <div><h4>Категории</h4><ul>${products.filter(p => p.category === c.id).map(p => `<li><a href="#" data-category-filter="${c.id}">${p.title}</a></li>`).slice(0,5).join('')}</ul></div>
-              <div class="mega-banner"><h5>Скидки до 30%</h5><p>На все товары</p><button style="background:#1a1a1a; color:#fff; border:none; padding:0.5rem 1rem; border-radius:20px; font-size:0.8rem; cursor:pointer;">Смотреть</button></div>
-            </div>
-          </li>
-        `).join('');
-
-        const mobileNavList = document.getElementById('mobileNavList');
-        mobileNavList.innerHTML = categories.map(c => `
-          <div class="mobile-nav-item">
-            <button class="mobile-nav-link" data-toggle="mob-${c.id}">${c.name} <i class="fas fa-chevron-down" style="font-size:0.8rem; color:#999;"></i></button>
-            <ul class="mobile-sub-list" id="mob-${c.id}">
-              <li data-category-filter="${c.id}">Все ${c.name.toLowerCase()}</li>
-              ${products.filter(p => p.category === c.id).map(p => `<li data-category-filter="${c.id}">${p.title}</li>`).slice(0,4).join('')}
-            </ul>
-          </div>
-        `).join('');
-      }
-      renderNav();
-
-      // КАРТОЧКА
-      function createProductCard(p) {
-        const isFav = favorites.includes(p.id);
-        return `
-          <div class="product-card" data-id="${p.id}">
-            <div class="product-img-wrapper">
-              ${p.icon}
-              <div class="badges">
-                ${p.discount ? `<div class="badge-item badge-discount">${p.discount}</div>` : ''}
-                ${p.popularity > 85 ? `<div class="badge-item badge-hit">Хит</div>` : ''}
-              </div>
-              <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${p.id}"><i class="fas fa-heart"></i></button>
-            </div>
-            <div class="product-info">
-              <div class="product-price">${p.price} ₽ ${p.oldPrice ? `<span class="product-price-old">${p.oldPrice} ₽</span>` : ''}</div>
-              <div class="product-brand">${p.sub}</div>
-              <div class="product-name">${p.title}</div>
-              <button class="btn-add-small" data-id="${p.id}"><i class="fas fa-shopping-bag"></i> В корзину</button>
-            </div>
-          </div>
-        `;
-      }
-
-      // ГЛАВНАЯ
-      function renderHome() {
-        const hits = [...products].sort((a, b) => b.popularity - a.popularity).slice(0, 6);
-        const newItems = [...products].sort((a, b) => b.id - a.id).slice(0, 6);
-        
-        mainContent.innerHTML = `
-          <div class="hero-banner desktop-only">
-            <div class="hero-slide" style="background: #1a1a1a;"><h2>ЧЕРНАЯ ПЯТНИЦА</h2><p>Скидки до 50% на все</p><button id="heroBtn">Смотреть</button></div>
-            <div class="hero-dots"><div class="hero-dot active"></div><div class="hero-dot"></div><div class="hero-dot"></div></div>
-          </div>
-          <div class="ad-placeholder ad-top desktop-only">Место для рекламы</div>
-          <div class="section-block"><div class="section-header"><h3>Категории</h3></div><div class="category-grid">${categories.map(c => `<div class="category-card" data-category-filter="${c.id}"><span>${c.name}</span><span class="cat-icon">${c.icon}</span></div>`).join('')}</div></div>
-          <div class="section-block"><div class="section-header"><h3>Хиты продаж</h3><a href="#">Все</a></div><div class="slider-wrapper"><div class="slider-track">${hits.map(p => createProductCard(p)).join('')}</div></div></div>
-          <div class="section-block"><div class="section-header"><h3>Новинки</h3><a href="#">Все</a></div><div class="slider-wrapper"><div class="slider-track">${newItems.map(p => createProductCard(p)).join('')}</div></div></div>
-        `;
-        bindCardEvents();
-      }
-
-      // КАТАЛОГ
-      function renderCatalog() {
-        mainContent.innerHTML = `
-          <div class="section-block">
-            <div class="section-header"><h3>Все товары</h3></div>
-            <div class="ad-placeholder ad-top">Реклама</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
-              ${products.map(p => createProductCard(p)).join('')}
-            </div>
-          </div>
-        `;
-        bindCardEvents();
-      }
-
-      function bindCardEvents() {
-        document.querySelectorAll('.product-card').forEach(card => {
-          card.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-add-small') || e.target.closest('.fav-btn')) return;
-            openProductModal(Number(card.dataset.id));
-          });
-        });
-      }
-
-      function filterByCategory(catId) {
-        const filtered = products.filter(p => p.category === catId);
-        mainContent.innerHTML = `
-          <div class="section-block">
-            <div class="section-header"><h3>${categories.find(c => c.id === catId)?.name || 'Товары'}</h3><a href="#" onclick="renderHome();return false;">Назад</a></div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
-              ${filtered.map(p => createProductCard(p)).join('')}
-            </div>
-          </div>
-        `;
-        bindCardEvents();
-      }
-
-      // ТОВАР
-      const productModal = document.getElementById('productModal');
-      const productDetailContent = document.getElementById('productDetailContent');
-
-      function openProductModal(id) {
-        const p = products.find(prod => prod.id === id);
-        if (!p) return;
-        const isFav = favorites.includes(p.id);
-        productDetailContent.innerHTML = `
-          <div class="product-detail-img">${p.icon}<button class="fav-btn-large ${isFav ? 'active' : ''}" data-id="${p.id}"><i class="fas fa-heart"></i></button></div>
-          <div class="product-detail-title">${p.title}</div>
-          <div class="product-detail-sub">${p.sub}</div>
-          <div class="product-detail-desc">${p.desc}</div>
-          <div class="product-detail-price"><span class="new">${p.price} ₽</span>${p.oldPrice ? `<span class="old">${p.oldPrice} ₽</span>` : ''}</div>
-          <button class="btn-add-large" data-id="${p.id}"><i class="fas fa-shopping-bag"></i> В корзину</button>
-        `;
-        productModal.style.display = 'flex';
-      }
-
-      // КОРЗИНА
+      // Обновление корзины
       function updateCartUI() {
+        const products = getProducts();
         let totalPrice = 0;
         cart.forEach(item => {
           const product = products.find(p => p.id === item.id);
@@ -570,12 +526,13 @@
         }
       }
 
-      // СОБЫТИЯ
+      // Общий обработчик кликов
       document.body.addEventListener('click', (e) => {
+        // Добавление в корзину
         const addBtn = e.target.closest('.btn-add-small') || e.target.closest('.btn-add-large');
         if (addBtn) {
           e.stopPropagation();
-          if (addBtn.closest('#productModal')) productModal.style.display = 'none';
+          if (addBtn.closest('#productModal')) document.getElementById('productModal').style.display = 'none';
           const id = Number(addBtn.dataset.id);
           const existing = cart.find(item => item.id === id);
           if (existing) existing.qty++;
@@ -585,43 +542,55 @@
           return;
         }
 
+        // Избранное
         const favBtn = e.target.closest('.fav-btn') || e.target.closest('.fav-btn-large');
         if (favBtn) {
           e.stopPropagation();
           const id = Number(favBtn.dataset.id);
           const index = favorites.indexOf(id);
-          if (index === -1) {
-            favorites.push(id);
-            favBtn.classList.add('active');
-            showToast('В избранное');
-          } else {
-            favorites.splice(index, 1);
-            favBtn.classList.remove('active');
-            showToast('Убрано');
-          }
+          if (index === -1) { favorites.push(id); favBtn.classList.add('active'); showToast('В избранное'); }
+          else { favorites.splice(index, 1); favBtn.classList.remove('active'); showToast('Убрано'); }
           updateCartUI();
           return;
         }
 
+        // Фильтр категории
         const filterBtn = e.target.closest('[data-category-filter]');
         if (filterBtn) {
           e.preventDefault();
-          filterByCategory(filterBtn.dataset.categoryFilter);
+          const catId = filterBtn.dataset.categoryFilter;
+          const products = getProducts();
+          const categories = getCategories();
+          const filtered = products.filter(p => p.category === catId);
+          const mainContent = document.getElementById('mainContent');
+          mainContent.innerHTML = `
+            <div class="section-block">
+              <div class="section-header">
+                <h3>${categories.find(c => c.id === catId)?.name || 'Товары'}</h3>
+                <a href="#" onclick="renderHome(); return false;">Назад</a>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
+                ${filtered.map(p => createProductCard(p)).join('')}
+              </div>
+            </div>
+          `;
+          bindCardEvents();
           if (document.getElementById('mobileDrawer').classList.contains('open')) closeMobMenu();
           return;
         }
       });
 
-      // МОДАЛКИ
+      // Модалки
       document.getElementById('cartBtn').addEventListener('click', () => { updateCartUI(); document.getElementById('cartModal').style.display = 'flex'; });
       document.getElementById('navCartBtn').addEventListener('click', (e) => { e.preventDefault(); updateCartUI(); document.getElementById('cartModal').style.display = 'flex'; });
       document.getElementById('closeCart').addEventListener('click', () => document.getElementById('cartModal').style.display = 'none');
       document.getElementById('favBtn').addEventListener('click', () => { renderFavorites(); document.getElementById('favModal').style.display = 'flex'; });
       document.getElementById('navFavBtn').addEventListener('click', (e) => { e.preventDefault(); renderFavorites(); document.getElementById('favModal').style.display = 'flex'; });
       document.getElementById('closeFav').addEventListener('click', () => document.getElementById('favModal').style.display = 'none');
-      document.getElementById('closeProduct').addEventListener('click', () => productModal.style.display = 'none');
+      document.getElementById('closeProduct').addEventListener('click', () => document.getElementById('productModal').style.display = 'none');
 
       function renderFavorites() {
+        const products = getProducts();
         const favList = document.getElementById('favList');
         if (favorites.length === 0) { favList.innerHTML = '<div style="text-align:center; color:#999; padding:1rem;">Пусто</div>'; return; }
         const favProducts = products.filter(p => favorites.includes(p.id));
@@ -635,9 +604,8 @@
       }
 
       // ЛК
-      const profileModal = document.getElementById('profileModal');
-      document.getElementById('profileBtn').addEventListener('click', () => { updateProfileUI(); profileModal.style.display = 'flex'; });
-      document.getElementById('closeProfile').addEventListener('click', () => profileModal.style.display = 'none');
+      document.getElementById('profileBtn').addEventListener('click', () => { updateProfileUI(); document.getElementById('profileModal').style.display = 'flex'; });
+      document.getElementById('closeProfile').addEventListener('click', () => document.getElementById('profileModal').style.display = 'none');
 
       document.getElementById('toggleAuthBtn').addEventListener('click', () => {
         isRegistering = !isRegistering;
@@ -686,7 +654,7 @@
         }
       }
 
-      // ДАТЫ
+      // Даты
       const wheelDay = document.getElementById('wheelDay');
       const wheelMonth = document.getElementById('wheelMonth');
       const wheelYear = document.getElementById('wheelYear');
@@ -731,7 +699,7 @@
         }, 100);
       });
 
-      // ПОПОЛНЕНИЕ / ПРОМО
+      // Пополнение / Промо
       document.getElementById('topupBtn').addEventListener('click', () => document.getElementById('topupModal').style.display = 'flex');
       document.getElementById('closeTopup').addEventListener('click', () => document.getElementById('topupModal').style.display = 'none');
       document.getElementById('confirmTopup').addEventListener('click', () => {
@@ -745,7 +713,7 @@
         else { showToast('Неверный промокод'); }
       });
 
-      // МОБИЛЬНОЕ МЕНЮ
+      // Мобильное меню
       const mobileDrawer = document.getElementById('mobileDrawer');
       const overlayMob = document.getElementById('overlayMob');
       document.getElementById('mobileMenuBtn').addEventListener('click', () => { mobileDrawer.classList.add('open'); overlayMob.classList.add('active'); });
@@ -757,20 +725,20 @@
         if (toggleBtn) { const sublist = document.getElementById(toggleBtn.dataset.toggle); if (sublist) sublist.classList.toggle('open'); }
       });
 
-      // ПЕРЕКЛЮЧЕНИЕ
+      // Переключение страниц
       document.querySelectorAll('[data-page]').forEach(link => {
         link.addEventListener('click', (e) => {
           e.preventDefault();
           const page = link.dataset.page;
-          if (page === 'home') { renderHome(); document.querySelectorAll('.nav-item-mob').forEach(n => n.classList.remove('active')); document.querySelector('.nav-item-mob[data-page="home"]')?.classList.add('active'); }
-          else if (page === 'catalog') { renderCatalog(); document.querySelectorAll('.nav-item-mob').forEach(n => n.classList.remove('active')); document.querySelector('.nav-item-mob[data-page="catalog"]')?.classList.add('active'); }
+          if (page === 'home') { renderHome(); }
+          else if (page === 'catalog') { renderCatalog(); }
           else if (page === 'profile') { updateProfileUI(); document.getElementById('profileModal').style.display = 'flex'; }
         });
       });
 
-      document.getElementById('logoBtn').addEventListener('click', () => { renderHome(); document.querySelectorAll('.nav-item-mob').forEach(n => n.classList.remove('active')); document.querySelector('.nav-item-mob[data-page="home"]')?.classList.add('active'); });
+      document.getElementById('logoBtn').addEventListener('click', () => { renderHome(); });
 
-      // КНОПКИ КОРЗИНЫ
+      // Кнопки корзины
       cartItemsList.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
@@ -790,20 +758,20 @@
         setTimeout(() => { document.getElementById('cartModal').style.display = 'none'; cart = []; updateCartUI(); }, 500);
       });
 
-      // РЕКЛАМА
-      const skipBtn = document.getElementById('skipAdBtn');
-      const skipTimer = document.getElementById('skipTimer');
-      skipBtn.addEventListener('click', () => {
-        if (!skipBtn.classList.contains('active')) return;
+      // Реклама
+      document.getElementById('skipAdBtn').addEventListener('click', () => {
+        if (!document.getElementById('skipAdBtn').classList.contains('active')) return;
         document.getElementById('adInterstitial').style.display = 'none';
       });
 
-      // ПОИСК
+      // Поиск
       document.getElementById('searchInput').addEventListener('keyup', (e) => {
         if (e.key === 'Enter') {
           const query = e.target.value.toLowerCase().trim();
           if (!query) return renderHome();
+          const products = getProducts();
           const filtered = products.filter(p => p.title.toLowerCase().includes(query) || p.sub.toLowerCase().includes(query));
+          const mainContent = document.getElementById('mainContent');
           mainContent.innerHTML = `
             <div class="section-block">
               <div class="section-header"><h3>Результаты: "${query}"</h3></div>
@@ -816,7 +784,7 @@
         }
       });
 
-      // СТАРТ
+      // Старт
       renderHome();
       updateCartUI();
 
